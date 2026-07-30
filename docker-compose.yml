@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: weather
+      POSTGRES_PASSWORD: weather
+      POSTGRES_DB: weather
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weather -d weather"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pipeline-weather:
+    build:
+      context: .
+      dockerfile: pipeline_weather/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://weather:weather@postgres:5432/weather
+      DAGSTER_HOME: /opt/dagster/dagster_home
+    volumes:
+      - ./dagster_home:/opt/dagster/dagster_home
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dagster-webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile_dagster
+    command: dagster-webserver -h 0.0.0.0 -p 3000 -w /opt/dagster/app/workspace.yaml
+    ports:
+      - "3000:3000"
+    environment:
+      DAGSTER_HOME: /opt/dagster/dagster_home
+    volumes:
+      - ./workspace.yaml:/opt/dagster/app/workspace.yaml
+      - ./dagster_home:/opt/dagster/dagster_home
+    depends_on:
+      - pipeline-weather
+
+  dagster-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile_dagster
+    command: dagster-daemon run -w /opt/dagster/app/workspace.yaml
+    environment:
+      DAGSTER_HOME: /opt/dagster/dagster_home
+    volumes:
+      - ./workspace.yaml:/opt/dagster/app/workspace.yaml
+      - ./dagster_home:/opt/dagster/dagster_home
+    depends_on:
+      - pipeline-weather
+
+volumes:
+  postgres_data:
