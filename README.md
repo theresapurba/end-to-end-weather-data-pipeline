@@ -1,9 +1,8 @@
-# Thailand Weather Forecast Pipeline
+# Pipeline_Analytics
 
 A Dagster data pipeline that fetches three-day weather forecasts for **Bangkok**, **Chiang Mai**, and **Phuket** from the free [Open-Meteo API](https://open-meteo.com/), stores the raw API responses, and loads a clean reporting table into PostgreSQL.
 
 Built as a capstone portfolio project to show end-to-end pipeline design: ingestion, persistence, transformation, and data quality checks.
-
 ---
 
 ## What it does
